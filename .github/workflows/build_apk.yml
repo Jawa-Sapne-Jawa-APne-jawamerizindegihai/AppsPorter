@@ -1,0 +1,142 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "Direct APK download link"
+        required: true
+        type: string
+
+      patch_name:
+        description: "Exact patch folder name from apc/patches"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            wget \
+            curl \
+            xmlstarlet \
+            zip \
+            unzip
+
+      - name: Show available patches
+        run: |
+          echo "Available patches:"
+          find apc/patches -mindepth 1 -maxdepth 1 -type d -printf '%f\n'
+
+      - name: Validate patch name
+        run: |
+          PATCH="${{ inputs.patch_name }}"
+
+          if [ ! -d "apc/patches/$PATCH" ]; then
+            echo "::error::Patch '$PATCH' does not exist!"
+            echo "Available patches:"
+            find apc/patches -mindepth 1 -maxdepth 1 -type d -printf '%f\n'
+            exit 1
+          fi
+
+          echo "Patch found: $PATCH"
+
+      - name: Download APK
+        run: |
+          mkdir -p input
+
+          echo "Downloading APK..."
+          curl -L \
+            --fail \
+            --retry 3 \
+            --retry-delay 3 \
+            "${{ inputs.apk_url }}" \
+            -o input/target.apk
+
+          if [ ! -s input/target.apk ]; then
+            echo "::error::Downloaded APK is empty or invalid!"
+            exit 1
+          fi
+
+          echo "APK downloaded successfully:"
+          ls -lh input/target.apk
+
+      - name: Make scripts executable
+        run: |
+          chmod +x build_port.sh
+          find scripts -type f -name "*.sh" -exec chmod +x {} \;
+
+      - name: Build
+        run: |
+          ./build_port.sh \
+            input/target.apk \
+            "${{ inputs.patch_name }}"
+
+      - name: Validate output APK
+        run: |
+          echo "Checking build output..."
+
+          APK_COUNT=0
+          VALID_APK=0
+
+          shopt -s nullglob
+
+          for apk in out/*.apk; do
+            APK_COUNT=$((APK_COUNT + 1))
+
+            if [ -s "$apk" ]; then
+              SIZE=$(stat -c%s "$apk")
+
+              if [ "$SIZE" -gt 0 ]; then
+                echo "Valid APK: $apk ($(du -h "$apk" | cut -f1))"
+                VALID_APK=$((VALID_APK + 1))
+              else
+                echo "::error::Broken APK (0 bytes): $apk"
+              fi
+            else
+              echo "::error::Empty or broken APK: $apk"
+            fi
+          done
+
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "::error::BUILD FAILED - No APK found in out/"
+            exit 1
+          fi
+
+          if [ "$VALID_APK" -eq 0 ]; then
+            echo "::error::BUILD FAILED - All generated APKs are empty or broken!"
+            exit 1
+          fi
+
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.patch_name }}-APK
+          path: out/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build Success
+        run: |
+          echo "================================"
+          echo "       BUILD SUCCESSFUL"
+          echo "================================"
+          echo "Patch: ${{ inputs.patch_name }}"
+          echo "Output:"
+          ls -lh out/*.apk
