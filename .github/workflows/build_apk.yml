@@ -91,37 +91,37 @@ jobs:
         run: |
           echo "Checking build output..."
 
-          APK_COUNT=0
+          # Use absolute path to avoid relative path resolution issues in runner
+          OUT_DIR="$(pwd)/out"
+
+          if [ ! -d "$OUT_DIR" ]; then
+            echo "::error::Output directory does not exist!"
+            exit 1
+          }
+
+          # List contents of out directory for debugging
+          ls -la "$OUT_DIR"
+
           VALID_APK=0
 
-          shopt -s nullglob
-
-          for apk in out/*.apk; do
-            APK_COUNT=$((APK_COUNT + 1))
-
-            if [ -s "$apk" ]; then
+          for apk in "$OUT_DIR"/*.apk; do
+            if [ -f "$apk" ]; then
               SIZE=$(stat -c%s "$apk")
-
               if [ "$SIZE" -gt 0 ]; then
-                echo "Valid APK: $apk ($(du -h "$apk" | cut -f1))"
+                echo "Valid APK found: $apk ($(du -h "$apk" | cut -f1))"
                 VALID_APK=$((VALID_APK + 1))
               else
                 echo "::error::Broken APK (0 bytes): $apk"
               fi
-            else
-              echo "::error::Empty or broken APK: $apk"
             fi
           done
 
-          if [ "$APK_COUNT" -eq 0 ]; then
-            echo "::error::BUILD FAILED - No APK found in out/"
+          if [ "$VALID_APK" -eq 0 ]; then
+            echo "::error::BUILD FAILED - No valid non-empty APK found in out/!"
             exit 1
           fi
 
-          if [ "$VALID_APK" -eq 0 ]; then
-            echo "::error::BUILD FAILED - All generated APKs are empty or broken!"
-            exit 1
-          fi
+          echo "Validation successful!"
 
 
       - name: Upload APK
