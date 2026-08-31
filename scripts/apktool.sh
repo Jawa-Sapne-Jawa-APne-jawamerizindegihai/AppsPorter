@@ -32,6 +32,7 @@ HEAP_SIZE="${HEAP_SIZE:-2048}"
 FRAMEWORK_DIR="$ROOT/frameworks"
 FRAMEWORK_TAG="${FRAMEWORK_TAG:-custom}"
 
+CAN_SIGN=1
 
 INSTALL_FRAMEWORK() {
     local fw_apk="$1"
@@ -62,7 +63,6 @@ DECOMPILE() {
 
     LOG "Decompiling $(basename "$input_file") to $output_path" 2
 
-
     if java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d -q \
         --no-debug-info \
         -j "$THREAD_COUNT" \
@@ -71,13 +71,11 @@ DECOMPILE() {
         -t "$FRAMEWORK_TAG" \
         "$input_file"; then
 
-        CAN_SIGN=0
-
+        CAN_SIGN=1
         return 0
     fi
 
     LOGW "Decompile failed with framework directory. Retrying without framework and resources" 2
-
 
     rm -rf "$output_path" $FRAMEWORK_DIR
 
@@ -89,6 +87,8 @@ DECOMPILE() {
 
         ABORT "Decompile failed even without framework."
     fi
+
+    CAN_SIGN=0
 }
 
 BUILD() {
