@@ -1,8 +1,8 @@
 # AppsPorter
-Tool for porting OEM specific apps on every devices without root.
+Tool for porting OEM specific apps on every devices without root. 
 
 <p align="center">
-  <img src="readme/apc.jfif" alt="AppsPorter" width="500"/>
+  <img src="readme/apc.jpg" alt="AppsPorter" width="500"/>
 </p>
 
 Usage 
@@ -85,6 +85,15 @@ mods/
             └── CustomClass.smali
 ```
 
+---
+
+## Licensing
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+- **[android-tools](https://github.com/nmeum/android-tools)** - Licensed under Apache License 2.0
+- **[apktool](https://github.com/iBotPeaches/Apktool)** - Licensed under Apache License 2.0  
+- **[smali](https://github.com/google/smali)** - Licensed under BSD 3-Clause License
 ---
 
 ## Contributing
