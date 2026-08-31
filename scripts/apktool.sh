@@ -63,13 +63,15 @@ DECOMPILE() {
     LOG "Decompiling $(basename "$input_file") to $output_path" 2
 
 
-    if java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d \
+    if java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d -q \
         --no-debug-info \
         -j "$THREAD_COUNT" \
         -o "$output_path" \
         -p "$FRAMEWORK_DIR" \
         -t "$FRAMEWORK_TAG" \
         "$input_file"; then
+
+        CAN_SIGN=0
 
         return 0
     fi
@@ -79,7 +81,7 @@ DECOMPILE() {
 
     rm -rf "$output_path" $FRAMEWORK_DIR
 
-    if ! java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d  --only-manifest --match-original \
+    if ! java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d  --only-manifest -q \
         --no-debug-info \
         -j "$THREAD_COUNT" \
         -o "$output_path" \
@@ -105,7 +107,7 @@ BUILD() {
 
     LOG "Building APK from $src_dir to $output_path" 2
 
-    java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" b -api "29" \
+    java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" b -api "29" -q \
         -j "$THREAD_COUNT" \
         -p "$FRAMEWORK_DIR" \
         -o "$output_path" \
@@ -116,6 +118,11 @@ BUILD() {
 SIGN_APK() {
     local input_apk="$1"
     local output_apk="$2"
+
+    if [ "$CAN_SIGN" -ne 1 ]; then
+        LOGW "Skipping APK signing because decompilation used manifest-only mode. you have to sign the apk manually via MT manager or other third party tools." 2
+        return 0
+    fi
 
     if [ -z "$input_apk" ] || [ -z "$output_apk" ]; then
         LOGE "Usage: SIGN_APK <input_unsigned_apk> <output_signed_apk>" 2
@@ -128,5 +135,10 @@ SIGN_APK() {
     fi
 
     LOG "Signing APK..." 2
-    java -jar "$SIGNAPK_JAR" "$PEM_KEY" "$PK8_KEY" "$input_apk" "$output_apk"
+
+    java -jar "$SIGNAPK_JAR" \
+        "$PEM_KEY" \
+        "$PK8_KEY" \
+        "$input_apk" \
+        "$output_apk"
 }
