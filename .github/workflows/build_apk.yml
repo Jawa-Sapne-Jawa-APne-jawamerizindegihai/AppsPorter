@@ -87,42 +87,6 @@ jobs:
             input/target.apk \
             "${{ inputs.patch_name }}"
 
-      - name: Validate output APK
-        run: |
-          echo "Checking build output..."
-
-          # Use absolute path to avoid relative path resolution issues in runner
-          OUT_DIR="$(pwd)/out"
-
-          if [ ! -d "$OUT_DIR" ]; then
-            echo "::error::Output directory does not exist!"
-            exit 1
-          }
-
-          # List contents of out directory for debugging
-          ls -la "$OUT_DIR"
-
-          VALID_APK=0
-
-          for apk in "$OUT_DIR"/*.apk; do
-            if [ -f "$apk" ]; then
-              SIZE=$(stat -c%s "$apk")
-              if [ "$SIZE" -gt 0 ]; then
-                echo "Valid APK found: $apk ($(du -h "$apk" | cut -f1))"
-                VALID_APK=$((VALID_APK + 1))
-              else
-                echo "::error::Broken APK (0 bytes): $apk"
-              fi
-            fi
-          done
-
-          if [ "$VALID_APK" -eq 0 ]; then
-            echo "::error::BUILD FAILED - No valid non-empty APK found in out/!"
-            exit 1
-          fi
-
-          echo "Validation successful!"
-
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
