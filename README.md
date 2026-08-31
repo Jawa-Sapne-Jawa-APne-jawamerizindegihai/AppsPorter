@@ -2,7 +2,7 @@
 Tool for porting OEM specific apps on every devices without root. 
 
 <p align="center">
-  <img src="readme/apc.jpg" alt="AppsPorter" width="500"/>
+  <img src="readme/apc.jpg" alt="AppsPorter" width="230"/>
 </p>
 
 Usage 
