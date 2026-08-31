@@ -2,7 +2,7 @@
 Tool for porting OEM specific apps on every devices without root.
 
 Usage 
-bash build_port.sh <apk file> <oem patch name> 
+bash build_port.sh apk oem patch name 
 
 This patch will work only for specific oem that patch is selected.
 
