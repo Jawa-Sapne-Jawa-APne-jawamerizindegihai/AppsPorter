@@ -1,9 +1,13 @@
 # AppsPorter
 Tool for porting OEM specific apps on every devices without root.
 
+<p align="center">
+  <img src="readme/apc.jfif" alt="AppsPorter" width="500"/>
+</p>
+
 Usage 
 ```bash
-bash build_port.sh <apk> <patch name> 
+bash build_port.sh <apk>  <patch name> 
 ```
 
 This patch will work only for specific oem that patch is selected.
@@ -76,7 +80,6 @@ Example:
 
 ```text
 mods/
-└── smali_classes2/
     └── com/
         └── example/
             └── CustomClass.smali
