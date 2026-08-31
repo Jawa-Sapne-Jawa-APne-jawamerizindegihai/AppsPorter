@@ -38,7 +38,7 @@ PRINT_USAGE() {
     LOG "Usage: ./build_port.sh <apk_file.apk> <patch_name>" 2
     LOG ""
     LOG "Available patches in $PATCHES_DIR:" 2
-    
+
     if [ -d "$PATCHES_DIR" ]; then
         local found=0
         for patch in "$PATCHES_DIR"/*; do
@@ -65,18 +65,12 @@ USE_THREADS() {
     CPU_CORES="$(nproc)"
     TOTAL_MEM_GB="$(free -g | awk '/^Mem:/{print $2}')"
 
-    # If this is not our pc, then dont care, use all cores lol 
+    # If this is not our pc, then dont care, use all cores lol
 	# destroy ms azure runners ;D jk
     if [ -n "$GITHUB_ACTIONS" ]; then
         THREADS="$CPU_CORES"
     else
         THREADS="$((CPU_CORES - 2))"
-    fi
-
-    RAM_LIMIT="$((TOTAL_MEM_GB / 2))"
-
-    if (( THREADS > RAM_LIMIT )); then
-        THREADS="$RAM_LIMIT"
     fi
 
     (( THREADS < 1 )) && THREADS=1
@@ -113,5 +107,7 @@ fi
 
 
 CHECK_DEPS
+
+rm -rf $ROOT/out $ROOT/temp
 
 source "$SCRIPTS_DIR/make_apk.sh"

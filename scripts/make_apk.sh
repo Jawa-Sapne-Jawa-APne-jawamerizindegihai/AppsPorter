@@ -121,6 +121,7 @@ if [ -d "$FW_JAR_DECOMPILE_DIR" ]; then
         [[ "$desc" =~ ^Landroid/ ]] || [[ "$desc" =~ ^Landroidx/ ]] || \
         [[ "$desc" =~ ^Ljava/ ]] || [[ "$desc" =~ ^Lkotlin/ ]] || \
         [[ "$desc" =~ ^Lcom/google/ ]]
+
     }
 
 
@@ -162,6 +163,30 @@ if [ -d "$FW_JAR_DECOMPILE_DIR" ]; then
     done
 fi
 
+NATIVE_LIBS_INJECTED=0
+
+
+if [ -d "$PATCH_DIR/lib" ]; then
+    LOG "Injecting native libraries..." 2
+    mkdir -p "$APK_DECOMPILE_DIR/lib/armeabi-v7a"
+    cp -rf "$PATCH_DIR/lib"/* "$APK_DECOMPILE_DIR/lib/armeabi-v7a/" 2>/dev/null || \
+    cp -rf "$PATCH_DIR/lib"/* "$APK_DECOMPILE_DIR/lib/"
+    NATIVE_LIBS_INJECTED=1
+fi
+
+
+if [ -d "$PATCH_DIR/lib64" ]; then
+    LOG "Injecting 64-bit native libraries..." 2
+    mkdir -p "$APK_DECOMPILE_DIR/lib/arm64-v8a"
+    cp -rf "$PATCH_DIR/lib64"/* "$APK_DECOMPILE_DIR/lib/arm64-v8a/"
+    NATIVE_LIBS_INJECTED=1
+fi
+
+
+if [ "$NATIVE_LIBS_INJECTED" -eq 1 ]; then
+    SET_EXTRACT_NATIVE_LIBS "$MANIFEST" "true"
+fi
+
 # Cleanup empty
 if [ -z "$(ls -A "$TARGET_NEW_SMALI_DIR")" ]; then
     rm -rf "$TARGET_NEW_SMALI_DIR"
@@ -170,6 +195,48 @@ else
     LOG "Successfully injected missing smali classes into smali_classes${NEXT_SMALI_NUM}" 2
 fi
 
+PATCH_LIB_DIR="$PATCH_DIR/lib"
+if [ -d "$PATCH_LIB_DIR" ]; then
+    LOG "Injecting native libraries (.so) from patch..." 2
+    mkdir -p "$APK_DECOMPILE_DIR/lib"
+    cp -r "$PATCH_LIB_DIR"/* "$APK_DECOMPILE_DIR/lib/"
+fi
+
+
+MODS_DIR="$PATCH_DIR/mods"
+
+if [ -z "$(ls -A "$TARGET_NEW_SMALI_DIR")" ] && [ ! -d "$MODS_DIR" ]; then
+    rm -rf "$TARGET_NEW_SMALI_DIR"
+    LOG "No missing smali classes were injected." 2
+else
+
+    mkdir -p "$TARGET_NEW_SMALI_DIR"
+
+    if [ -d "$MODS_DIR" ]; then
+        LOG "Injecting files from modded folder to smali_classes${NEXT_SMALI_NUM}..." 2
+        cp -rf "$MODS_DIR"/* "$TARGET_NEW_SMALI_DIR/"
+    fi
+
+fi
+
+
+PATCH_SCRIPTS_DIR="$PATCH_DIR/scripts"
+if [ -d "$PATCH_SCRIPTS_DIR" ]; then
+    LOG "Running custom patch scripts..." 2
+
+    MAIN_PWD="$(pwd)"
+
+    cd "$APK_DECOMPILE_DIR" || exit 1
+
+    for script_file in "$PATCH_SCRIPTS_DIR"/*.sh; do
+        if [ -f "$script_file" ]; then
+            LOG "  Executing: $(basename "$script_file")" 3
+            source "$script_file"
+        fi
+    done
+
+    cd "$MAIN_PWD" || exit 1
+fi
 
 mkdir -p "$OUTPUT_DIR"
 

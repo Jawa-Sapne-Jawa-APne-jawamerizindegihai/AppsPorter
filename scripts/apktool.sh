@@ -62,15 +62,32 @@ DECOMPILE() {
 
     LOG "Decompiling $(basename "$input_file") to $output_path" 2
 
-    java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d \
+
+    if java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d \
         --no-debug-info \
         -j "$THREAD_COUNT" \
         -o "$output_path" \
         -p "$FRAMEWORK_DIR" \
         -t "$FRAMEWORK_TAG" \
-        "$input_file"
-}
+        "$input_file"; then
 
+        return 0
+    fi
+
+    LOGW "Decompile failed with framework directory. Retrying without framework and resources" 2
+
+
+    rm -rf "$output_path" $FRAMEWORK_DIR
+
+    if ! java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" d  --only-manifest --match-original \
+        --no-debug-info \
+        -j "$THREAD_COUNT" \
+        -o "$output_path" \
+        "$input_file"; then
+
+        ABORT "Decompile failed even without framework."
+    fi
+}
 
 BUILD() {
     local src_dir="$1"
@@ -88,7 +105,7 @@ BUILD() {
 
     LOG "Building APK from $src_dir to $output_path" 2
 
-    java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" b \
+    java -Xmx"${HEAP_SIZE}m" -jar "$APKTOOL_JAR" b -api "29" \
         -j "$THREAD_COUNT" \
         -p "$FRAMEWORK_DIR" \
         -o "$output_path" \

@@ -27,7 +27,7 @@ CHECK_COMMAND() {
 }
 
 CHECK_DEPS() {
-# Java is required for apktool and signapk 
+# Java is required for apktool and signapk
 CHECK_COMMAND "java" "Java (JRE/JDK)"
 
 # xmlstarlet is required for XML editing

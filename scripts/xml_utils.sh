@@ -21,7 +21,7 @@ SET_MIN_SDK() {
     local min_sdk="$2"
 
     LOG "Setting minSdkVersion to $min_sdk..." 2
-    
+
     if ! xmlstarlet sel -t -v "/manifest/uses-sdk/@android:minSdkVersion" "$manifest_file" >/dev/null 2>&1; then
         xmlstarlet ed -L -s "/manifest" -t elem -n "uses-sdk-temp" \
             -i "//uses-sdk-temp" -t attr -n "android:minSdkVersion" -v "$min_sdk" \
@@ -89,7 +89,24 @@ APPEND_IN_XML() {
 
 
     LOG "Appending node.." 2
-    
+
     xmlstarlet ed -L -s "$parent_xpath" -t subnode -v "$xml_snippet" "$xml_file" 2>/dev/null || \
         sed -i "s|${parent_xpath}>|${parent_xpath}>\n${xml_snippet}|g" "$xml_file"
+}
+
+
+SET_EXTRACT_NATIVE_LIBS() {
+    local manifest_file="$1"
+    local value="${2:-true}"
+
+
+    if xmlstarlet sel -N android="http://schemas.android.com/apk/res/android" \
+        -t -v "/manifest/application/@android:extractNativeLibs" "$manifest_file" >/dev/null 2>&1; then
+
+        xmlstarlet ed -L -N android="http://schemas.android.com/apk/res/android" \
+            -u "/manifest/application/@android:extractNativeLibs" -v "$value" "$manifest_file"
+    else
+        xmlstarlet ed -L -N android="http://schemas.android.com/apk/res/android" \
+            -a "/manifest/application" -t attr -n "android:extractNativeLibs" -v "$value" "$manifest_file"
+    fi
 }
