@@ -24,12 +24,12 @@ jobs:
         run: curl -L --fail "${{ inputs.apk_link }}" -o input.apk
 
       - name: Run port
-        run: bash build_port.sh input.apk "apc/patches/${{ inputs.patch }}"
+        run: bash build_port.sh input.apk "${{ inputs.patch }}"
 
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.run_id }}
-          path: output/*.apk
+          path: out/*.apk
 
           retention-days: 1
