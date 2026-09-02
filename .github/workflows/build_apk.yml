@@ -1,106 +1,35 @@
-name: Build APK
+name: Generate Port
+run-name: ${{ inputs.run_id }}
 
 on:
   workflow_dispatch:
     inputs:
-      apk_url:
-        description: "Direct APK download link"
+      apk_link:
+        description: "Download link"
         required: true
-        type: string
-
-      patch_name:
-        description: "Exact patch folder name from apc/patches"
+      patch:
+        description: "Patch"
         required: true
-        type: string
+      run_id:
+        description: "Correlation id sent by the website"
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Download source APK
+        run: curl -L --fail "${{ inputs.apk_link }}" -o input.apk
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            wget \
-            curl \
-            xmlstarlet \
-            zip \
-            unzip
+      - name: Run port
+        run: bash build_port.sh input.apk "apc/patches/${{ inputs.patch }}"
 
-      - name: Show available patches
-        run: |
-          echo "Available patches:"
-          find apc/patches -mindepth 1 -maxdepth 1 -type d -printf '%f\n'
-
-      - name: Validate patch name
-        run: |
-          PATCH="${{ inputs.patch_name }}"
-
-          if [ ! -d "apc/patches/$PATCH" ]; then
-            echo "::error::Patch '$PATCH' does not exist!"
-            echo "Available patches:"
-            find apc/patches -mindepth 1 -maxdepth 1 -type d -printf '%f\n'
-            exit 1
-          fi
-
-          echo "Patch found: $PATCH"
-
-      - name: Download APK
-        run: |
-          mkdir -p input
-
-          echo "Downloading APK..."
-          curl -L \
-            --fail \
-            --retry 3 \
-            --retry-delay 3 \
-            "${{ inputs.apk_url }}" \
-            -o input/target.apk
-
-          if [ ! -s input/target.apk ]; then
-            echo "::error::Downloaded APK is empty or invalid!"
-            exit 1
-          fi
-
-          echo "APK downloaded successfully:"
-          ls -lh input/target.apk
-
-      - name: Make scripts executable
-        run: |
-          chmod +x build_port.sh
-          find scripts -type f -name "*.sh" -exec chmod +x {} \;
-
-      - name: Build
-        run: |
-          ./build_port.sh \
-            input/target.apk \
-            "${{ inputs.patch_name }}"
-
-
-      - name: Upload APK
+      - name: Upload result
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.patch_name }}-APK
-          path: out/*.apk
-          if-no-files-found: error
-          retention-days: 7
+          name: ${{ inputs.run_id }}
+          path: output/*.apk
 
-      - name: Build Success
-        run: |
-          echo "================================"
-          echo "       BUILD SUCCESSFUL"
-          echo "================================"
-          echo "Patch: ${{ inputs.patch_name }}"
-          echo "Output:"
-          ls -lh out/*.apk
+          retention-days: 1
