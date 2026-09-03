@@ -38,6 +38,8 @@
 
 .field public static final BUILD_VERSION_OPLUSROM_CONFIDENTIAL:Ljava/lang/String;
 
+.field public static final VERSION_SOFTWARECONFIDENTIAL:Ljava/lang/String; = "ro.version.confidential"
+
 .field public static final CAMERA_SOUND_FORCED:Ljava/lang/String;
 
 .field public static final COLORMODE_CINEMA:Ljava/lang/String;
